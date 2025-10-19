@@ -9,7 +9,7 @@
 	- hsv színtérbe konvertálást használunk
 
 A Snooker labdákat színeik alapján azonosíthatjuk, ha a színképüket hibaértékek közé szorítjuk.
-![[Pasted image 20251006131451.png]]
+![Snooker Balls](balls.png)
 
 Például a piros labdákra:
 ```python
@@ -25,7 +25,7 @@ red_mask = mask1 | mask2
 ```
 
 *2 mask a piros esetén a HSV színtér színegyenesének határai miatt kellenek:*
-![[gyuw4.png]]
+![HSV](gyuw4.png)
 
 A cv2-es könyvtár **Hough Circle Transform** technikát használó. HoughCircles metódusa alkalmas a labdák felismerésére:
 ```python
