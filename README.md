@@ -9,7 +9,7 @@
 	- hsv színtérbe konvertálást használunk
 
 A Snooker labdákat színeik alapján azonosíthatjuk, ha a színképüket hibaértékek közé szorítjuk.
-![Snooker Balls](balls.png)
+![Snooker Balls](balls.jpg)
 
 Például a piros labdákra:
 ```python
@@ -35,7 +35,7 @@ Ezzel megkapjuk a labdák pozícióját és átmérőjét.
 
 A cv2 tackereit (követőit) használva számontartjuk a labdák mozgását (megtaláljuk a legközelebbi detektált pozíciót a framek között).
 
-Ezeket egy tömbbe gyűjtjük, ezáltal számontartjuk a látható labdákat. Ha egy labda eltűnt a tömbből, akkor belökték, így meghatározhatjuk melyik játékos vesztett labdát.
+Ezeket egy tömbbe gyűjtjük, ezáltal számontartjuk a látható labdákat. Ha egy labda eltűnt a tömbből, akkor belökték, így meghatározhatjuk melyik játékos szerzett pontot.
 
 ___
 ## Prototípus:
@@ -44,8 +44,4 @@ Egy felülnézetes videón dolgozunk:
 1. Megnyitjuk a videót
 2. **HSV** színtérbe konvertáljuk a frameket
 3. Szegmentáljuk a labdákat és egy listában, vagy tömbben tároljuk őket
-4. Tároljuk a pontszámokat amíg minden labda el nem fogy, vagy a feketét be nem lövik
-
-
----
-1. Milyen videóanyagot kell majd használnunk?
+4. Tároljuk a pontszámokat amíg minden labda el nem fogy
