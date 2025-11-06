@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 import snooker_colors as cr
 
+# test
+
 capture = cv2.VideoCapture("snooker_720p_sullivan.mp4")
 
 current_player = 1          # 1 or 2
