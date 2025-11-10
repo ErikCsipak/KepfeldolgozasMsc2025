@@ -3,9 +3,7 @@ import numpy as np
 import snooker_colors as cr
 import ball_detector as bd
 
-# test
-
-capture = cv2.VideoCapture("snooker_720p_sullivan.mp4")
+capture = cv2.VideoCapture("snooker.mp4")
 
 current_player = 1          # 1 or 2
 ball_to_pot = "Red"         # "Red" or "Color"
@@ -15,17 +13,12 @@ while capture.isOpened():
     ret, frame = capture.read()
     if not ret:
         break
+    frame = bd.resize_frame(frame)
 
     balls = bd.get_balls_map(frame)
 
-    current_red_count = 0
-    if balls is not None:
-        print(balls)
-        balls = np.uint16(np.around(balls.get(cr.WHITE)))
-        current_red_count = len(balls[0])
-        for (x, y, r) in balls[0, :]:
-            cv2.circle(frame, (x, y), r, (0, 255, 0), 2)    # circle around ball
-            cv2.circle(frame, (x, y), 2, (255, 0, 0), 3)    # center dot
+    current_red_count = len(balls.get(cr.RED)[0])
+    #bd.draw_detected_balls(frame, balls) # enable if you want to see the detected balls
  
     # check if it is not the first frame
     if previous_red_count != -1:
@@ -62,8 +55,8 @@ while capture.isOpened():
     cv2.putText(frame, f"Reds Left: {current_red_count}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
 
     # show result
-    bgr_boosted = cv2.cvtColor(frame, cv2.COLOR_HSV2BGR)
-    cv2.imshow("Snooker Red Ball Detection", bgr_boosted)
+    #bg.draw_balls_to_frame(frame, balls)
+    cv2.imshow("Snooker Red Ball Detection", frame)
 
     if cv2.waitKey(25) & 0xFF == ord('q'):
         break
