@@ -8,6 +8,8 @@ capture = cv2.VideoCapture("snooker.mp4")
 current_player = 1          # 1 or 2
 ball_to_pot = "Red"         # "Red" or "Color"
 previous_red_count = -1     # stores the red count from the last stable frame
+first_score = 0             # score of player 1
+second_score = 0            # score of player 2
 
 while capture.isOpened():
     ret, frame = capture.read()
@@ -25,7 +27,10 @@ while capture.isOpened():
         
         # detect a successful red pot
         if previous_red_count - current_red_count == 1:
-            # logic for red ball scoring
+            if current_player == 1:
+                first_score += 1
+            else:
+                second_score += 1
             
             # switch the target ball from Red to Color (player continues turn)
             if ball_to_pot == "Red":
@@ -33,8 +38,13 @@ while capture.isOpened():
             
             # if a red ball was potted instead of color -> turn switch
             else:
-                current_player = 1 if current_player == 2 else 2
                 # logic for foul penalty
+                if current_player == 2:
+                    first_score += 4
+                else:
+                    second_score += 4
+                current_player = 1 if current_player == 2 else 2
+
         
         # logic for detecting a miss or foul
         # if shot concluded and no pot:
@@ -53,6 +63,8 @@ while capture.isOpened():
     # display current state
     cv2.putText(frame, f"Player {current_player}'s Turn. Pot: {ball_to_pot}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
     cv2.putText(frame, f"Reds Left: {current_red_count}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+    cv2.putText(frame, f"Player 1: {first_score}", (850, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+    cv2.putText(frame, f"Player 2: {second_score}", (850, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
 
     # show result
     #bg.draw_balls_to_frame(frame, balls)
