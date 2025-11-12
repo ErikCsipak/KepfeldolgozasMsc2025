@@ -1,7 +1,10 @@
 import cv2
 import numpy as np
+from fontTools.ttLib.tables.C_P_A_L_ import Color
+
 import snooker_colors as cr
 import ball_detector as bd
+import pot_detector as pd
 
 capture = cv2.VideoCapture("snooker.mp4")
 
@@ -10,6 +13,8 @@ ball_to_pot = "Red"         # "Red" or "Color"
 previous_red_count = -1     # stores the red count from the last stable frame
 first_score = 0             # score of player 1
 second_score = 0            # score of player 2
+successful = False          # indicates if there was a successful pot
+penalty = False             # indicates if there was a foul
 
 while capture.isOpened():
     ret, frame = capture.read()
@@ -19,44 +24,62 @@ while capture.isOpened():
 
     balls = bd.get_balls_map(frame)
 
+    potted_color = pd.get_potted_color(balls)
+
     current_red_count = len(balls.get(cr.RED)[0])
-    #bd.draw_detected_balls(frame, balls) # enable if you want to see the detected balls
+    bd.draw_detected_balls(frame, balls) # enable if you want to see the detected balls
  
     # check if it is not the first frame
     if previous_red_count != -1:
         
         # detect a successful red pot
         if previous_red_count - current_red_count == 1:
-            if current_player == 1:
-                first_score += 1
-            else:
-                second_score += 1
-            
             # switch the target ball from Red to Color (player continues turn)
             if ball_to_pot == "Red":
-                ball_to_pot = "Color"
+                successful = True
+                if current_player == 1:
+                    first_score += 1
+                else:
+                    second_score += 1
             
             # if a red ball was potted instead of color -> turn switch
             else:
                 # logic for foul penalty
+                penalty = True   # failsafe in case of both a red and color was potted
                 if current_player == 2:
                     first_score += 4
                 else:
                     second_score += 4
-                current_player = 1 if current_player == 2 else 2
 
+        # if shot concluded and a Color was potted: ball_to_pot = "Color" (todo: currently does not check if multiple color balls are potted in one frame)
+        if len(potted_color) > 0:
+            if ball_to_pot == Color:
+                if current_player == 1:
+                    first_score += pd.points[potted_color[0]]
+                else:
+                    second_score += pd.points[potted_color[0]]
+                successful = True
+                ball_to_pot = "Red"  # player continues turn, must now pot a Red
+            else:
+                # if shot concluded and a Color was potted instead of Red (foul)
+                penalty = True  # failsafe in case of both a red and color was potted
+                if current_player == 2:
+                    first_score += max(pd.points[potted_color[0]], 4)
+                else:
+                    second_score += max(pd.points[potted_color[0]], 4)
         
         # logic for detecting a miss or foul
-        # if shot concluded and no pot:
-        current_player = 1 if current_player == 2 else 2
-        ball_to_pot = "Red" if current_red_count > 0 else ball_to_pot
-        
-        # if shot concluded and a Color was potted: ball_to_pot = "Color"
-        ball_to_pot = "Red" # player continues turn, must now pot a Red
-        
-        # if shot concluded and a Color was potted instead of Red (foul)
-        current_player = 1 if current_player == 2 else 2
-        # logic here to apply penalty points for the foul
+
+        # logic for start of new turn
+        if successful and not penalty:
+            if ball_to_pot == "Red":
+                ball_to_pot = "Color"
+            else:
+                ball_to_pot = "Red"
+        else:
+            # if shot concluded and no pot:
+            current_player = 1 if current_player == 2 else 2
+            ball_to_pot = "Red" if current_red_count > 0 else ball_to_pot
 
     previous_red_count = current_red_count
 
