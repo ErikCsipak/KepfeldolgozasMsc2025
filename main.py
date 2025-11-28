@@ -15,6 +15,8 @@ first_score = 0             # score of player 1
 second_score = 0            # score of player 2
 successful = False          # indicates if there was a successful pot
 penalty = False             # indicates if there was a foul
+frames_without_action = 0   # counter for frames with no pot or change
+INACTIVITY_THRESHOLD = 60   # number of frames to wait before switching turn (about 2-3 seconds at 30fps)
 
 while capture.isOpened():
     ret, frame = capture.read()
@@ -76,10 +78,20 @@ while capture.isOpened():
                 ball_to_pot = "Color"
             else:
                 ball_to_pot = "Red"
+            frames_without_action = 0  # reset counter on successful pot
         else:
             # if shot concluded and no pot:
-            current_player = 1 if current_player == 2 else 2
-            ball_to_pot = "Red" if current_red_count > 0 else ball_to_pot
+            # check if there was any action this frame
+            if previous_red_count == current_red_count and len(potted_color) == 0:
+                frames_without_action += 1
+            else:
+                frames_without_action = 0
+
+            # switch turn if inactivity threshold is reached
+            if frames_without_action >= INACTIVITY_THRESHOLD:
+                current_player = 1 if current_player == 2 else 2
+                ball_to_pot = "Red" if current_red_count > 0 else ball_to_pot
+                frames_without_action = 0  # reset counter after turn switch
 
     previous_red_count = current_red_count
 
