@@ -32,7 +32,7 @@ while capture.isOpened():
 
     balls = bd.get_balls_map(frame)
 
-    potted_color = pd.get_potted_color(balls)
+    marked_color = pd.get_potted_color(balls)
 
     current_red_count = len(balls.get(cr.RED)[0])
     bd.draw_detected_balls(frame, balls) # enable if you want to see the detected balls
@@ -63,9 +63,17 @@ while capture.isOpened():
     
     # check if it is not the first frame
     if previous_red_count != -1:
+
+        # detect a red ball missing, starting buffer
+        if previous_red_count - current_red_count == 1:
+            pd.red_buffer += 1
+        else:
+            pd.red_buffer = 0
         
         # detect a successful red pot
-        if previous_red_count - current_red_count == 1:
+        if pd.red_buffer == 10:
+            previous_red_count = current_red_count
+            pd.red_buffer = 0
             # switch the target ball from Red to Color (player continues turn)
             if ball_to_pot == "Red":
                 successful = True
@@ -82,23 +90,60 @@ while capture.isOpened():
                     first_score += 4
                 else:
                     second_score += 4
-
-        # if shot concluded and a Color was potted: ball_to_pot = "Color" (todo: currently does not check if multiple color balls are potted in one frame)
-        if len(potted_color) > 0:
-            if ball_to_pot == Color:
-                if current_player == 1:
-                    first_score += pd.points[potted_color[0]]
-                else:
-                    second_score += pd.points[potted_color[0]]
-                successful = True
-                ball_to_pot = "Red"  # player continues turn, must now pot a Red
+        # if a color ball is missing for a frame
+        if len(marked_color) > 0:
+            if "pink" in marked_color:  # and "pink" not in potted_color:
+                pd.pink_buffer += 1
             else:
-                # if shot concluded and a Color was potted instead of Red (foul)
-                penalty = True  # failsafe in case of both a red and color was potted
-                if current_player == 2:
-                    first_score += max(pd.points[potted_color[0]], 4)
+                pd.pink_buffer = 0
+            if "blue" in marked_color:  # and "blue" not in potted_color:
+                pd.blue_buffer += 1
+            else:
+                pd.blue_buffer = 0
+            if "green" in marked_color:  # and "green" not in potted_color:
+                 pd.green_buffer += 1
+            else:
+                pd.green_buffer = 0
+            if "yellow" in marked_color:  # and "yellow" not in potted_color:
+                pd.yellow_buffer += 1
+            else:
+                pd.yellow_buffer = 0
+            if "brown" in marked_color:  # and "brown" not in potted_color:
+                pd.brown_buffer += 1
+            else:
+                pd.brown_buffer = 0
+            if "black" in marked_color:  # and "black" not in potted_color:
+                pd.black_buffer += 1
+            else:
+                pd.black_buffer = 0
+            if "white" in marked_color:  # and "white" not in potted_color:
+                pd.white_buffer += 1
+            else:
+                pd.white_buffer = 0
+
+            potted_color_confirmed = pd.pot_confirm()
+            if potted_color_confirmed != "none":
+                if potted_color_confirmed == "white":
+                # applying penalty for potting white ball
+                    if current_player == 2:
+                        first_score += 4
+                    else:
+                        second_score += 4
+                    current_player = 1 if current_player == 2 else 2
+                if ball_to_pot == "Color":
+                    if current_player == 1:
+                        first_score += pd.points[potted_color_confirmed]
+                    else:
+                        second_score += pd.points[potted_color_confirmed]
+                    ball_to_pot = "Red"  # player continues turn, must now pot a Red
                 else:
-                    second_score += max(pd.points[potted_color[0]], 4)
+                    # if shot concluded and a Color was potted instead of Red (foul)
+                    if current_player == 2:
+                        first_score += max(pd.points[potted_color_confirmed], 4)
+                    else:
+                        second_score += max(pd.points[potted_color_confirmed], 4)
+                    current_player = 1 if current_player == 2 else 2
+                    ball_to_pot = "Red"
         
         # logic for start of new turn
         if successful and not penalty:
@@ -115,8 +160,9 @@ while capture.isOpened():
             frames_without_motion = 0  # reset counter after turn switch
             successful = False
             penalty = False
+    else:
+        previous_red_count = current_red_count
 
-    previous_red_count = current_red_count
     successful = False  # reset for next frame
     penalty = False     # reset for next frame
 
