@@ -18,6 +18,12 @@ penalty = False             # indicates if there was a foul
 frames_without_action = 0   # counter for frames with no pot or change
 INACTIVITY_THRESHOLD = 60   # number of frames to wait before switching turn (about 2-3 seconds at 30fps)
 
+# Motion detection variables
+previous_frame_gray = None
+MOTION_THRESHOLD = 500      # threshold for detecting motion (sum of differences)
+frames_without_motion = 0   # counter for frames without ball motion
+MOTION_INACTIVITY_THRESHOLD = 90  # frames to wait without motion before turn switch (about 3 seconds at 30fps)
+
 while capture.isOpened():
     ret, frame = capture.read()
     if not ret:
@@ -31,6 +37,30 @@ while capture.isOpened():
     current_red_count = len(balls.get(cr.RED)[0])
     bd.draw_detected_balls(frame, balls) # enable if you want to see the detected balls
  
+    # motion detection logic
+    current_frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    current_frame_gray = cv2.GaussianBlur(current_frame_gray, (21, 21), 0)
+    
+    motion_detected = False
+    if previous_frame_gray is not None:
+        # calculate frame difference
+        frame_diff = cv2.absdiff(previous_frame_gray, current_frame_gray)
+        
+        # apply threshold to get binary image
+        _, thresh = cv2.threshold(frame_diff, 25, 255, cv2.THRESH_BINARY)
+        
+        # calculate motion score (sum of white pixels)
+        motion_score = np.sum(thresh) / 255  # normalize by dividing by 255
+        
+        # check if motion exceeds threshold
+        if motion_score > MOTION_THRESHOLD:
+            motion_detected = True
+            frames_without_motion = 0
+        else:
+            frames_without_motion += 1
+    
+    previous_frame_gray = current_frame_gray.copy()
+    
     # check if it is not the first frame
     if previous_red_count != -1:
         
@@ -70,34 +100,31 @@ while capture.isOpened():
                 else:
                     second_score += max(pd.points[potted_color[0]], 4)
         
-        # logic for detecting a miss or foul
-
         # logic for start of new turn
         if successful and not penalty:
             if ball_to_pot == "Red":
                 ball_to_pot = "Color"
             else:
                 ball_to_pot = "Red"
-            frames_without_action = 0  # reset counter on successful pot
-        else:
-            # if shot concluded and no pot:
-            # check if there was any action this frame
-            if previous_red_count == current_red_count and len(potted_color) == 0:
-                frames_without_action += 1
-            else:
-                frames_without_action = 0
-
-            # switch turn if inactivity threshold is reached
-            if frames_without_action >= INACTIVITY_THRESHOLD:
-                current_player = 1 if current_player == 2 else 2
-                ball_to_pot = "Red" if current_red_count > 0 else ball_to_pot
-                frames_without_action = 0  # reset counter after turn switch
+            frames_without_motion = 0  # reset motion counter on successful pot
+        
+        # turn switch based on motion detection (no balls moving)
+        if frames_without_motion >= MOTION_INACTIVITY_THRESHOLD:
+            current_player = 1 if current_player == 2 else 2
+            ball_to_pot = "Red" if current_red_count > 0 else ball_to_pot
+            frames_without_motion = 0  # reset counter after turn switch
+            successful = False
+            penalty = False
 
     previous_red_count = current_red_count
+    successful = False  # reset for next frame
+    penalty = False     # reset for next frame
 
     # display current state
+    motion_status = "MOVING" if motion_detected else "STILL"
     cv2.putText(frame, f"Player {current_player}'s Turn. Pot: {ball_to_pot}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
     cv2.putText(frame, f"Reds Left: {current_red_count}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+    cv2.putText(frame, f"Motion: {motion_status} ({frames_without_motion})", (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
     cv2.putText(frame, f"Player 1: {first_score}", (850, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
     cv2.putText(frame, f"Player 2: {second_score}", (850, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
 
