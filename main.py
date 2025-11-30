@@ -6,7 +6,7 @@ import snooker_colors as cr
 import ball_detector as bd
 import pot_detector as pd
 
-capture = cv2.VideoCapture("snooker.mp4")
+capture = cv2.VideoCapture("snooker_cut.mp4")
 
 current_player = 1          # 1 or 2
 ball_to_pot = "Red"         # "Red" or "Color"
@@ -20,7 +20,7 @@ INACTIVITY_THRESHOLD = 60   # number of frames to wait before switching turn (ab
 
 # Motion detection variables
 previous_frame_gray = None
-MOTION_THRESHOLD = 500      # threshold for detecting motion (sum of differences)
+MOTION_THRESHOLD = 10      # threshold for detecting motion (sum of differences)
 frames_without_motion = 0   # counter for frames without ball motion
 MOTION_INACTIVITY_THRESHOLD = 90  # frames to wait without motion before turn switch (about 3 seconds at 30fps)
 
@@ -35,7 +35,7 @@ while capture.isOpened():
     marked_color = pd.get_potted_color(balls)
 
     current_red_count = len(balls.get(cr.RED)[0])
-    bd.draw_detected_balls(frame, balls) # enable if you want to see the detected balls
+    #bd.draw_detected_balls(frame, balls) # enable if you want to see the detected balls
  
     # motion detection logic
     current_frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
