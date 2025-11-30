@@ -107,3 +107,29 @@ Jelenleg a projekt beégetett szegmentálási technikával dolgozik. Ahogy azt m
 3. A szín-középértékeket vizsgálva nézzük meg, hogy találunk-e a framen olyan színhalmazt, ami a legközelebb áll az adott vizsgált színhez
 	1. Az a talált színhalmaz, ami a legközelebb esik a vizsgált szín-középértékhez megegyezik a labda színével
 Ezzel a technikával automatikusan megállapíthatjuk az adott asztalon, az adott környezethez igazítva egy labda színét, amit azt a  játék során fel tudunk használni a labda azonosításához.
+
+
+# Játékszabályok megvalósítása
+
+## Golyók belökéséért járó pontok
+A szegmentálással megtalált golyók (és azok pozíciói) egy map-ben vannak tárolva. Az eredeti megvalósításban szimplán akkor kapott pontot az adott fél, ha egy framen kevesebb golyó van, mint az előzőn. A korábban bemutatott nehézségek miatt viszont ez a módszer egyátalán nem volt működőképes. Ennek kiküszöbölésére egy bufferes rendszert alkalmaztunk. Ennek lényege, hogy ha egy golyó hiányzik egy frame-ben, akkor elindul egy időzítő. Ez az időzítő minden frame-ben 1-el növekszik, viszont, ha a golyó újra megjelenik (azaz szegmentálási hiba történt), akkor az időzítő vissza lesz állítva 0-ra. Ha egy bizonyos értéket elér az időzítő, csak akkor kezeljük úgy, hogy a golyó be lett lökve. A pontokat ilyenkor adjuk meg.
+Ezen rendszer tesztelése során az is világossá vált, hogy nem optimális az összes golyóra azonos buffer határértéket megadni. 
+
+<img width="1091" height="561" alt="image" src="https://github.com/user-attachments/assets/b78bed60-3832-4b1a-a019-a45236f5eb85" />
+
+A barna, és fekete golyók sokkal több ideig tűnnek el, akár több másodpercnyi frame idejéig (a zöld golyót pedig nem is sikerült érzékelni). Ez azt jelenti, hogy nagy buffer határérték megadása szükséges, hogy ne legyenek false pozitív eseteink (ilyenkor úgy érzékelné a program, hogy belökés történt, közben pedig csak szegmentálási hiba). Ugyanakkor viszont a piros vagy kék golyóknál nagyon pontos a szegmentálás, így elég nagyon szűk határártékeket megadni.
+Egy további kihívása a pontozás megvalósításának az volt, hogy ha egy színes golyót löknek be, akkor az visszakerül a pályára. Ez azt jelenti, hogy a bufferek felsőkorlátja az az idő, amíg a golyó vissza nem kerül a képre. Ha ennél nagyobb buffert adnánk meg, az adott golyó belökését nem érzékelnénk.
+
+## Hibapontok kezelése
+A Snooker szabályai szerint nem csak a sikeres belökésekért jár pont, hanem az ellenfél hibáiért hibapontok is járnak. Ahhoz, hogy ellenőrizzük, hogy az adott helyzetben kinek kéne pontot kapnia, két változót használtunk. Az egyik azt nézi, hogy éppen melyik játékos köre van, a másik azt, hogy az adott játékosnak piros vagy színes golyót kellene beütnie. Ezeket a változókat módosítjuk a káték szabályainak megfelelően, és a változóktól függ, hogy ki, és mennyi pontot kap, ha egy labdát belöknek.
+
+## Hiányosságok
+1. A Snookerben ténylegesen nem csak azt kell nézni, hogy piros vagy színes golyót kell belökni, hanem a játékos konkrétan megnevez egy golyót, és azt kell beütnie. Ennek a megvalósítása viszont egy külső inputot igényelne a felhasználó részéről, ezért egy "bizalmas" megoldást választottunk, mely szerint a beütött golyü az, amelyiket a játékos kiválasztott.
+2. Hasonló módon a Snookerben hibapontok járnak ugratásért, valamint a bíró is ítélhet hibát szubjektíven. Ezeknek a nyomon követése nem valósítható meg a jelenlegi programunkkal, és megint csak egy külső input-rendszert igényelne.
+3. A zöld golyó belökéséért jelenleg egyik fél se kap pontot. (szegmentálási nehézségek miatt)
+
+
+# Lehetséges továbbfejlesztések
+A hiányosságok kiküszöbölésére adható lehetséges megoldások:
+1. Ha a program rendelkezik egy felülettel, amely lehetőséget biztosít a felhasználónak, hogy a hiányzó információt megadja, akkor a program alkalmas lesz az összes pontozási szabály nyomon követésére.
+2. Golyók egyéni mozgásának vizsgálata: ha külön vizsgáljuk, hogy egy kör során melyik golyók mozdultak el, meg tudjuk adni, hogy melyik golyót érintette elsőnek a fehér. Ez által pontosabbá tehetjük a pontozást.
